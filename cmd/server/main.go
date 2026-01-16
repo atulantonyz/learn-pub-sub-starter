@@ -3,24 +3,23 @@ package main
 import (
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"log"
 	"os"
 	"os/signal"
 )
 
 func main() {
-	AMQP_URL := "amqp://guest:guest@localhost:5672/"
-	conn, err := amqp.Dial(AMQP_URL)
+	const rabbitConnString = "amqp://guest:guest@localhost:5672/"
+	conn, err := amqp.Dial(rabbitConnString)
 	if err != nil {
-		fmt.Printf("Failed to connect to RabbitMQ: %v", err)
-		os.Exit(1)
+		log.Fatalf("Could not connect to RabbitMQ: %v", err)
 	}
-	fmt.Println("Connection successful")
 	defer conn.Close()
-	fmt.Println("Starting Peril server...")
+	fmt.Println("Peril game server connected to RabbitMQ!")
 	// wait for ctrl+c
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
 	<-signalChan
-	fmt.Println("Interrupt received, shutting down program")
+	fmt.Println("RabbitMQ connection closed.")
 
 }
