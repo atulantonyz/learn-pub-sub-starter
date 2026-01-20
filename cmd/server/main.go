@@ -6,8 +6,6 @@ import (
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
-	"os"
-	"os/signal"
 )
 
 func main() {
@@ -27,10 +25,5 @@ func main() {
 		log.Fatalf("Error publishing json: %v", err)
 	}
 
-	// wait for ctrl+c
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt)
-	<-signalChan
-	fmt.Println("RabbitMQ connection closed.")
-
+	fmt.Println("Pause message sent!")
 }
