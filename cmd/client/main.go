@@ -40,15 +40,15 @@ func main() {
 		}
 		switch words[0] {
 		case "spawn":
-			gamestate.CommandSpawn(words)
+			err := gamestate.CommandSpawn(words)
+			if err != nil {
+				fmt.Println(err)
+			}
 		case "move":
 			_, err := gamestate.CommandMove(words)
-			if err == nil {
-				fmt.Printf("%v", err)
-			} else {
-				fmt.Println("Move successful")
+			if err != nil {
+				fmt.Println(err)
 			}
-
 		case "status":
 			gamestate.CommandStatus()
 		case "help":
