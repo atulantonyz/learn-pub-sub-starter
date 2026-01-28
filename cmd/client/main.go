@@ -9,13 +9,6 @@ import (
 	"log"
 )
 
-func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
-	defer fmt.Print("> ")
-	return func(ps routing.PlayingState) {
-		gs.HandlePause(ps)
-	}
-}
-
 func main() {
 	fmt.Println("Starting Peril client ...")
 	const rabbitConnString = "amqp://guest:guest@localhost:5672/"
