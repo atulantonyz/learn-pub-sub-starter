@@ -9,6 +9,13 @@ import (
 	"log"
 )
 
+func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
+	defer fmt.Print("> ")
+	return func(ps routing.PlayingState) {
+		gs.HandlePause(ps)
+	}
+}
+
 func main() {
 	fmt.Println("Starting Peril client ...")
 	const rabbitConnString = "amqp://guest:guest@localhost:5672/"
@@ -22,17 +29,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to get username: %v", err)
 	}
-	_, queue, err := pubsub.DeclareAndBind(
-		conn,
+	gamestate := gamelogic.NewGameState(username)
+	pubsub.SubscribeJSON(conn,
 		routing.ExchangePerilDirect,
 		routing.PauseKey+"."+username,
 		routing.PauseKey,
-		pubsub.SimpleQueueTransient)
-	if err != nil {
-		log.Fatalf("Could not subscribe to pause: %v", err)
-	}
-	fmt.Printf("Queue %v declared and bound!\n", queue.Name)
-	gamestate := gamelogic.NewGameState(username)
+		pubsub.SimpleQueueTransient,
+		handlerPause(gamestate))
 	for {
 		words := gamelogic.GetInput()
 		if len(words) == 0 {
