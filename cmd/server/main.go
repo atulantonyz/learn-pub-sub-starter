@@ -42,13 +42,13 @@ func main() {
 		case "pause":
 			err = pubsub.PublishJSON(ch, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: true})
 			if err != nil {
-				log.Fatalf("Error publishing json: %v", err)
+				log.Printf("Could not publish message: %v", err)
 			}
 			fmt.Println("Pause message sent!")
 		case "resume":
 			err = pubsub.PublishJSON(ch, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: false})
 			if err != nil {
-				log.Fatalf("Error publishing json: %v", err)
+				log.Printf("Could not publish message: %v", err)
 			}
 			fmt.Println("Resume message sent!")
 		case "quit":
