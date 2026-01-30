@@ -59,8 +59,9 @@ func main() {
 		case "move":
 			move, err := gamestate.CommandMove(words)
 			err = pubsub.PublishJSON(publishCh,
-				string(routing.ExchangePerilTopic),
-				string(routing.ArmyMovesPrefix)+"."+move.Player.Username, move)
+				routing.ExchangePerilTopic,
+				routing.ArmyMovesPrefix+"."+move.Player.Username,
+				move)
 			if err != nil {
 				fmt.Printf("error: %s\n", err)
 			}
