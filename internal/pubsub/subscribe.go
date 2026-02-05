@@ -7,13 +7,21 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+type AckType int
+
+const (
+	Ack AckType = iota
+	NackReque
+	NackDiscard
+)
+
 func SubscribeJSON[T any](
 	conn *amqp.Connection,
 	exchange,
 	queueName,
 	key string,
 	queueType SimpleQueueType, // an enum to represent "durable" or "transient"
-	handler func(T),
+	handler func(T) AckType,
 ) error {
 	ch, queue, err := DeclareAndBind(
 		conn,
@@ -40,10 +48,35 @@ func SubscribeJSON[T any](
 				continue
 			}
 
-			handler(body)
-			err = m.Ack(false)
-			if err != nil {
-				fmt.Printf("Failed to Ack delivery: %v\n", err)
+			retAck := handler(body)
+			switch retAck {
+			case Ack:
+				err = m.Ack(false)
+
+				if err != nil {
+					fmt.Printf("Failed to Ack delivery: %v\n", err)
+				} else {
+					fmt.Printf("Ack \n")
+				}
+
+			case NackReque:
+				err = m.Nack(false, true)
+				if err != nil {
+					fmt.Printf("Failed to Nack reque: %v\n", err)
+				} else {
+					fmt.Printf("Nack and reque \n")
+				}
+
+			case NackDiscard:
+				err = m.Nack(false, false)
+				if err != nil {
+					fmt.Printf("Failed to Nack discard: %v\n", err)
+				} else {
+					fmt.Printf("Nack and discard \n")
+				}
+
+			default:
+				fmt.Printf("Invalid AckType\n")
 			}
 		}
 	}()
