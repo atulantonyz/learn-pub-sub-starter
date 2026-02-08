@@ -55,26 +55,17 @@ func SubscribeJSON[T any](
 
 				if err != nil {
 					fmt.Printf("Failed to Ack delivery: %v\n", err)
-				} else {
-					fmt.Printf("Ack \n")
 				}
-
 			case NackReque:
 				err = m.Nack(false, true)
 				if err != nil {
 					fmt.Printf("Failed to Nack reque: %v\n", err)
-				} else {
-					fmt.Printf("Nack and reque \n")
 				}
-
 			case NackDiscard:
 				err = m.Nack(false, false)
 				if err != nil {
 					fmt.Printf("Failed to Nack discard: %v\n", err)
-				} else {
-					fmt.Printf("Nack and discard \n")
 				}
-
 			default:
 				fmt.Printf("Invalid AckType\n")
 			}
