@@ -22,16 +22,15 @@ func main() {
 		log.Fatalf("Error creating channel: %v", err)
 	}
 
-	_, queue, err := pubsub.DeclareAndBind(
-		conn,
+	err = pubsub.SubscribeGob(conn,
 		routing.ExchangePerilTopic,
 		routing.GameLogSlug,
 		routing.GameLogSlug+".*",
-		pubsub.SimpleQueueDurable)
+		pubsub.SimpleQueueDurable,
+		handlerLog())
 	if err != nil {
-		log.Fatalf("Could not subscribe to game_log: %v", err)
+		log.Fatalf("Failed to subscribe to game_log: %v", err)
 	}
-	fmt.Printf("Queue %v declared and bound!\n", queue.Name)
 	gamelogic.PrintServerHelp()
 	for {
 		userinput := gamelogic.GetInput()
@@ -61,4 +60,16 @@ func main() {
 
 	}
 
+}
+
+func handlerLog() func(routing.GameLog) pubsub.AckType {
+	return func(gl routing.GameLog) pubsub.AckType {
+		defer fmt.Print("> ")
+		err := gamelogic.WriteLog(gl)
+		if err != nil {
+			fmt.Printf("error: %s\n", err)
+			return pubsub.NackReque
+		}
+		return pubsub.Ack
+	}
 }
