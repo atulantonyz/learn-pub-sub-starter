@@ -25,56 +25,15 @@ func SubscribeJSON[T any](
 	queueType SimpleQueueType, // an enum to represent "durable" or "transient"
 	handler func(T) AckType,
 ) error {
-	ch, queue, err := DeclareAndBind(
-		conn,
-		exchange,
-		queueName,
-		key,
-		queueType)
-	if err != nil {
-		return err
+	unmarshaller := func(b []byte) (T, error) {
+		var body T
+		err := json.Unmarshal(b, &body)
+
+		return body, err
 	}
-	msgs, err := ch.Consume(queue.Name, "", false, false, false, false, nil)
+	err := subscribe(conn, exchange, queueName, key, queueType, handler, unmarshaller)
+	return err
 
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		defer ch.Close()
-		for m := range msgs {
-			var body T
-			err := json.Unmarshal(m.Body, &body)
-			if err != nil {
-				fmt.Printf("Could not unmarshal message: %v\n", err)
-				continue
-			}
-
-			retAck := handler(body)
-			switch retAck {
-			case Ack:
-				err = m.Ack(false)
-
-				if err != nil {
-					fmt.Printf("Failed to Ack delivery: %v\n", err)
-				}
-			case NackReque:
-				err = m.Nack(false, true)
-				if err != nil {
-					fmt.Printf("Failed to Nack reque: %v\n", err)
-				}
-			case NackDiscard:
-				err = m.Nack(false, false)
-				if err != nil {
-					fmt.Printf("Failed to Nack discard: %v\n", err)
-				}
-			default:
-				fmt.Printf("Invalid AckType\n")
-			}
-		}
-	}()
-
-	return nil
 }
 
 func SubscribeGob[T any](
@@ -85,12 +44,35 @@ func SubscribeGob[T any](
 	queueType SimpleQueueType, // an enum to represent "durable" or "transient"
 	handler func(T) AckType,
 ) error {
+
+	unmarshaller := func(b []byte) (T, error) {
+		buffer := bytes.NewBuffer(b)
+		dec := gob.NewDecoder(buffer)
+		var body T
+		err := dec.Decode(&body)
+
+		return body, err
+
+	}
+	err := subscribe(conn, exchange, queueName, key, queueType, handler, unmarshaller)
+	return err
+}
+
+func subscribe[T any](
+	conn *amqp.Connection,
+	exchange,
+	queueName,
+	key string,
+	simpleQueueType SimpleQueueType,
+	handler func(T) AckType,
+	unmarshaller func([]byte) (T, error),
+) error {
 	ch, queue, err := DeclareAndBind(
 		conn,
 		exchange,
 		queueName,
 		key,
-		queueType)
+		simpleQueueType)
 	if err != nil {
 		return err
 	}
@@ -103,10 +85,7 @@ func SubscribeGob[T any](
 	go func() {
 		defer ch.Close()
 		for m := range msgs {
-			buffer := bytes.NewBuffer(m.Body)
-			dec := gob.NewDecoder(buffer)
-			var body T
-			err := dec.Decode(&body)
+			body, err := unmarshaller(m.Body)
 
 			if err != nil {
 				fmt.Printf("Could not unmarshal message: %v\n", err)
