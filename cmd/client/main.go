@@ -7,6 +7,7 @@ import (
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
+	"time"
 )
 
 func main() {
@@ -50,7 +51,7 @@ func main() {
 		routing.WarRecognitionsPrefix,
 		routing.WarRecognitionsPrefix+".*",
 		pubsub.SimpleQueueDurable,
-		handlerWar(gamestate))
+		handlerWar(gamestate, publishCh))
 	if err != nil {
 		log.Fatalf("Failed to subscribe to war: %v", err)
 	}
@@ -91,4 +92,14 @@ func main() {
 
 	}
 
+}
+func publishGameLog(publishCh *amqp.Channel, username string, msg string) error {
+	gl := routing.GameLog{CurrentTime: time.Now(),
+		Message:  msg,
+		Username: username}
+	err := pubsub.PublishGob(publishCh, routing.ExchangePerilTopic, routing.GameLogSlug+"."+username, gl)
+	if err != nil {
+		return err
+	}
+	return nil
 }
