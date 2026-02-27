@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"strconv"
+	"time"
+
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"log"
-	"time"
 )
 
 func main() {
@@ -81,7 +83,27 @@ func main() {
 		case "help":
 			gamelogic.PrintClientHelp()
 		case "spam":
-			fmt.Println("Spamming not allowed yet!")
+			if len(words) != 2 {
+				fmt.Println("Incorrect usage")
+				continue
+			}
+			n, err := strconv.Atoi(words[1])
+			if err != nil {
+				fmt.Println("Argument must be positive integer")
+				continue
+			}
+			for range n {
+				mal_msg := gamelogic.GetMaliciousLog()
+				gl := routing.GameLog{CurrentTime: time.Now(),
+					Message:  mal_msg,
+					Username: username}
+				err := pubsub.PublishGob(publishCh, routing.ExchangePerilTopic, routing.GameLogSlug+"."+username, gl)
+				if err != nil {
+					fmt.Printf("error: %s\n", err)
+				}
+
+			}
+
 		case "quit":
 			gamelogic.PrintQuit()
 			return
